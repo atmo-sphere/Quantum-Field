@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset=UTF-8 />
+  <link rel="stylesheet" type="text/css" href="css/styles.css"/>
+</head>
+<body>
+
+
+
+
+
+
+  <script type="module">
+
+
+      import * as THREE from "https://threejs.org/build/three.module.js";
+      import {OrbitControls} from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/examples/jsm/controls/OrbitControls.js';
+      import { GLTFLoader } from "https://threejs.org/examples/jsm/loaders/GLTFLoader.js";
+      import { RGBELoader } from "https://threejs.org/examples/jsm/loaders/RGBELoader.js";
+      import { Water } from "https://threejs.org/examples/jsm/objects/Water.js";
+      import { Sky } from 'https://threejs.org/examples/jsm/objects/Sky.js';
+   
+      import { RoughnessMipmapper } from 'https://threejs.org/examples/jsm/utils/RoughnessMipmapper.js';
+
+      let mesh, renderer, scene, camera, clock, controls, water, skyboxMesh;
+
+      var spheres = [];
+
+      var torusKnot;
+
+      var params = {
+        color: '#ffffff',
+        scale: 4,
+        flowX: 1,
+        flowY: 1
+      };
+
+      init();
+      animate();
+
+      function init() {
+
+        const container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+
+        //Reflection Cube
+        const path = "textures/Cube/cubemap/";
+        const format = '.png';
+        const urls = [
+        path + 'px' + format, path + 'nx' + format,
+        path + 'py' + format, path + 'ny' + format,
+        path + 'pz' + format, path + 'nz' + format
+        ];
+
+        const reflectionCube = new THREE.CubeTextureLoader().load( urls );
+        const refractionCube = new THREE.CubeTextureLoader().load( urls );
+        refractionCube.mapping = THREE.CubeRefractionMapping;
+
+
+        camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 2000 );
+        camera.position.set(0,0,-85); 
+
+        scene = new THREE.Scene();
+        scene.background = reflectionCube;
+
+        clock = new THREE.Clock();
+
+
+
+
+        var ambientLight = new THREE.AmbientLight( 0xffffff, 0.5);
+        scene.add( ambientLight );
+ 
+
+        const light = new THREE.HemisphereLight( 0xffffff, 0x3e3e3e, 0.5 );
+        scene.add( light );
+
+
+        
+       
+        //Torus
+        const torusKnotGeometry = new THREE.TorusKnotBufferGeometry( 3, 1, 256, 32 );
+        const torusKnotMaterial = new THREE.MeshNormalMaterial();
+
+        torusKnot = new THREE.Mesh( torusKnotGeometry, torusKnotMaterial );
+        torusKnot.position.set( -10, 4, 20);
+        torusKnot.scale.set( 0.5, 0.5, 0.5 );
+        scene.add( torusKnot );
+
+
+        //Spheres
+        const geometry = new THREE.SphereBufferGeometry( 0.1, 30, 40 );
+        const material = new THREE.MeshLambertMaterial( { color: 0x0000ff, envMap: reflectionCube, combine: THREE.MixOperation, reflectivity: 0.3 } );
+
+        for ( var i = 0; i < 500; i ++ ) {
+
+        const mesh = new THREE.Mesh( geometry, material );
+
+        mesh.position.x = Math.random() * 10 + 5;
+        mesh.position.y = Math.random() * 10 - 5;
+        mesh.position.z = Math.random() * 10 - 5;
+
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = Math.random() * 3 + 1;
+        scene.add( mesh );
+        spheres.push( mesh );
+
+        }
+
+
+      
+        const waterGeometry = new THREE.PlaneBufferGeometry(2000,2000);
+
+        //Water
+        water = new Water(
+          waterGeometry,
+          {
+            textureWidth: 512,
+            textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load( 'textures/waternormals.jpg', function(texture){
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping; } ),
+            alpha: 0.6,
+            waterColor: 0x008BFF,
+            distortionScale: 3.7,
+            fog:scene.fog !== undefined
+          }
+          );
+
+        water.rotation.x = - Math.PI / 2;
+        water.position.y = -5;
+        scene.add(water);
+
+
+  
+        new RGBELoader()
+          .setDataType( THREE.UnsignedByteType )
+          .setPath( 'textures/equirectangular/' )
+          .load( 'roof_garden_.hdr', function ( texture ) {
+
+            const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+
+            scene.background = envMap;
+            scene.environment = envMap;
+
+            texture.dispose();
+            pmremGenerator.dispose();
+
+            render();
+
+        });
+        
+       
+
+        var gltfLoader = new GLTFLoader();
+        
+        gltfLoader.load('models/wavething.glb', (gltf) => {
+        var wave = gltf.scene;
+        scene.add(wave);
+        wave.scale.set (1.5, 1.5, 1.5);
+ 
+        });
+      
+        gltfLoader.load('models/bigmolecule.glb', (gltf) => {
+        var bmolecule = gltf.scene;
+        scene.add(bmolecule);
+        });
+
+        gltfLoader.load('models/greenmolecule.glb', (gltf) => {
+        var gmolecule = gltf.scene;
+        scene.add(gmolecule);
+     
+        });
+ 
+        gltfLoader.load('models/bigwave.glb', (gltf) => {
+        var wavebig = gltf.scene;
+        scene.add(wavebig);
+        bigwave.position.set(0,-5,0); 
+        });
+        
+        gltfLoader.load('models/mola.glb', (gltf) => {
+        var mola = gltf.scene;
+        scene.add(mola);
+        mola.scale.set (1.5, 1.5, 1.5);
+        mola.position.set(0,-5,0); 
+        });
+
+        gltfLoader.load('models/donuts.glb', (gltf) => {
+        var donuts = gltf.scene;
+        scene.add(donuts);
+        donuts.scale.set (1.5, 1.5, 1.5);
+
+        donuts.position.set(0,-5,0);    
+        });
+
+        gltfLoader.load('models/atom.glb', (gltf) => {
+        var atom = gltf.scene;
+        scene.add(atom);
+        atom.scale.set(0.7,0.7,0.7);
+        atom.position.set(0,-5,0);   
+        });
+        
+        gltfLoader.load('models/spheres.glb', (gltf) => {
+        var spheres = gltf.scene;
+        scene.add(spheres);
+        spheres.scale.set (1.5, 1.5, 1.5);
+        spheres.position.set(0,-5,0);   
+          
+        });
+  
+        gltfLoader.load('models/dna.glb', (gltf) => {
+        var dna = gltf.scene;
+        scene.add(dna);
+        dna.position.set(0,-5,0); 
+        });
+
+        gltfLoader.load('models/waveblue.glb', (gltf) => {
+        var waveblue = gltf.scene;
+        scene.add(waveblue);
+        waveblue.scale.set (1.5, 1.5, 1.5);
+        wavelue.position.set(0,-5,0); 
+        });
+
+        gltfLoader.load('models/pinkmolecule.glb', (gltf) => {
+        var pinkmolecule = gltf.scene;
+        scene.add(pinkmolecule);
+        pinkmolecule.scale.set (1.5, 1.5, 1.5);
+        pinkmolecule.position.set(0,-5,0); 
+        });
+
+
+
+        gltfLoader.load('models/raindrops.glb', (gltf) => {
+        var rain = gltf.scene;
+        scene.add(rain);
+        rain.scale.set (1.5, 1.5, 1.5);
+        rain.position.set(0,-5,0);
+        });
+
+
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.physicallyCorrectLights = true;
+        container.appendChild( renderer.domElement );
+
+        const pmremGenerator = new THREE.PMREMGenerator( renderer );
+        pmremGenerator.compileEquirectangularShader();
+
+        const controls = new OrbitControls( camera, renderer.domElement );
+        controls.addEventListener( 'change', render ); // use if there is no animation loop
+        controls.minDistance = -3000;
+        controls.maxDistance = 90;
+        controls.minPolarAngle = Math.PI/2;
+        controls.maxPolarAngle = Math.PI/2;
+        controls.target.set( 0, 0, - 0.2 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        }
+
+
+      function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        render();
+
+      }         
+
+      function animate() {
+
+
+      requestAnimationFrame( animate );
+      render();
+
+      }
+
+      function render() {
+
+
+          var timer = 0.0001 * Date.now();
+
+          const time2 = performance.now() * 0.0003;
+          let anim_time;
+
+          const k = 1.5;
+
+
+          for ( var i = 0, il = spheres.length; i < il; i ++ ) {
+
+          var sphere = spheres[ i ];
+
+         sphere.position.x = 5 * Math.cos( timer + i );
+         sphere.position.y = 5 * Math.sin( timer + i * 1.1 );
+
+         }
+
+         var delta = clock.getDelta();
+
+         torusKnot.rotation.x += delta;
+         torusKnot.rotation.y += delta * 0.5;
+
+
+         water.material.uniforms['time'].value += 0.2 / 60.0;
+
+        renderer.render( scene, camera );
+
+      }
+
+    </script>
+
+  </body>
+</html>
