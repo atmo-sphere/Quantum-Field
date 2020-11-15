@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset=UTF-8 />
+  <link rel="stylesheet" type="text/css" href="css/styles.css"/>
+    <style>
+            #blocker {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+        
+            }
+
+            #welcome {
+              width:25%;
+              top: 50%;
+              left: 50%;
+              position:fixed;
+              font-family:'Roboto', sans-serif;
+              font-size: 24pt;
+              padding: 8pt 0 8pt 0;
+              background-color: white;
+              border-radius: 24pt;
+              text-align: center;
+              transform: translate(-50%, -50%);
+              opacity: 1;
+               transition: opacity 2s ease-out;
+               border: 1px solid black;
+            }
+
+            #welcome:hover {
+            
+              background: #1a75ff;
+              border: none;
+              
+            }
+
+    </style>
+</head>
+<body>
+
+            <div id="blocker">
+
+            <div id="welcome">
+                    Welcome
+            </div>
+
+        </div>
+
+<script src="js/Tween.js"></script>
+  <script type="module">
+
+      import * as THREE from "https://threejs.org/build/three.module.js";
+
+      import { GLTFLoader } from "https://threejs.org/examples/jsm/loaders/GLTFLoader.js";
+
+      import { Water } from 'https://threejs.org/examples/jsm/objects/Water2.js';
+      import { Reflector } from "https://threejs.org/examples/jsm/objects/Reflector.js";
+      import { Refractor } from "https://threejs.org/examples/jsm/objects/Refractor.js";
+      import { RGBELoader } from "https://threejs.org/examples/jsm/loaders/RGBELoader.js";
+      import { RoughnessMipmapper } from 'https://threejs.org/examples/jsm/utils/RoughnessMipmapper.js';
+      import { PointerLockControls } from 'https://threejs.org/examples/jsm/controls/PointerLockControls.js';
+      import { TransformControls } from 'https://threejs.org/examples/jsm/controls/TransformControls.js';
+      import { OrbitControls } from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+        
+      let mesh, renderer, scene, camera, clock, controls, water, raycaster, fog, envMap,texture, axes;
+      let video, videoImage, videoImageContext, videoTexture;
+      let sphereCamera;
+
+
+        let moveForward = false;
+            let moveBackward = false;
+            let moveLeft = false;
+            let moveRight = false;
+            let canJump = false;
+
+        const objects = []; 
+
+            let prevTime = performance.now();
+            const velocity = new THREE.Vector3();
+            const direction = new THREE.Vector3();
+            const vertex = new THREE.Vector3();
+            const color = new THREE.Color();
+
+
+      var spheres = [];
+
+      var spheres2 = [];
+
+      var torusKnot;
+
+      var params = {
+        color: '#ffffff',
+        scale: 4,
+        flowX: 1,
+        flowY: 1
+      };
+
+    
+    init();
+    animate();
+
+
+      function init() {
+
+        const container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        //REFLECTION CUBE SPHERES
+        const path = "textures/Cube/cubemap/";
+        const format = '.png';
+        const urls = [
+        path + 'px' + format, path + 'nx' + format,
+        path + 'py' + format, path + 'ny' + format,
+        path + 'pz' + format, path + 'nz' + format
+        ];
+
+        const reflectionCube = new THREE.CubeTextureLoader().load( urls );
+        const refractionCube = new THREE.CubeTextureLoader().load( urls );
+        refractionCube.mapping = THREE.CubeRefractionMapping;
+
+        //CAMERA
+        camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 400 );
+        camera.position.set = (20, 0, -700);
+  
+        //SCENE
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2( 0x0000ff, 0.005 );
+
+
+        clock = new THREE.Clock();
+
+        controls = new PointerLockControls( camera, document.body );
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = Math.PI;
+        controls.addEventListener( 'change', render );
+        controls.enableDamping = true; 
+        controls.dampingFactor = 0.05;
+
+
+
+
+
+        const blocker = document.getElementById( 'blocker' );
+                
+
+            welcome.addEventListener( 'click', function () {
+
+                controls.lock();
+
+            }, false );
+
+            controls.addEventListener( 'lock', function () {
+
+                welcome.style.display = 'none';
+                blocker.style.display = 'none';
+
+            } );
+
+            controls.addEventListener( 'unlock', function () {
+
+                blocker.style.display = 'block';
+                welcome.style.display = '';
+
+            } );
+
+            scene.add( controls.getObject() );
+
+            const onKeyDown = function ( event ) {
+
+                switch ( event.keyCode ) {
+
+                    case 38: // up
+                    case 87: // w
+                        moveForward = true;
+                        break;
+
+                    case 37: // left
+                    case 65: // a
+                        moveLeft = true;
+                        break;
+
+                    case 40: // down
+                    case 83: // s
+                        moveBackward = true;
+                        break;
+
+                    case 39: // right
+                    case 68: // d
+                            moveRight = true;
+                            break;
+                        }
+
+                };
+
+                const onKeyUp = function ( event ) {
+
+                switch ( event.keyCode ) {
+
+                    case 38: // up
+                    case 87: // w
+                        moveForward = false;
+                        break;
+
+                    case 37: // left
+                    case 65: // a
+                        moveLeft = false;
+                        break;
+
+                    case 40: // down
+                    case 83: // s
+                        moveBackward = false;
+                        break;
+
+                    case 39: // right
+                    case 68: // d
+                        moveRight = false;
+                        break;
+
+                    }
+
+                };
+
+        document.addEventListener( 'keydown', onKeyDown, false );
+        document.addEventListener( 'keyup', onKeyUp, false );
+
+        raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 1, 0 ), 0, 10 );
+
+ 
+        //VIDEO
+        video = document.createElement( 'video' );
+
+
+        video.src = "video/sagan.mp4";
+        video.load(); 
+      
+        document.onkeypress = function(e){
+        if((e || window.event).keyCode === 32){
+            video.paused ? video.play() : video.pause();
+        }
+        };
+   
+        videoImage = document.createElement( 'canvas' );
+        videoImage.width = 480;
+        videoImage.height = 204;
+
+        videoImageContext = videoImage.getContext( '2d' );
+    
+        videoImageContext.fillStyle = '#000000';
+        videoImageContext.fillRect( 0, 0, videoImage.width, videoImage.height );
+
+        videoTexture = new THREE.Texture( videoImage );
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        
+        var movieMaterial = new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+   
+        var movieGeometry = new THREE.PlaneGeometry( 24, 10, 4, 4 );
+        var movieScreen = new THREE.Mesh( movieGeometry, movieMaterial );
+        movieScreen.position.set(0,0,-80);
+    
+        scene.add(movieScreen);
+
+
+
+        //LIGHTS
+        scene.add( new THREE.AmbientLight( 0x443333, 1 ) );
+
+        const dirLight1 = new THREE.DirectionalLight( 0xffffff, 2 );
+        dirLight1.position.set( 1, 4, 0.5 );
+        scene.add( dirLight1 );
+ 
+        const dirLight2 = new THREE.DirectionalLight( 0xccccff, 2 );
+        dirLight2.position.set( - 1, 4, - 0.5 );
+        scene.add( dirLight2 );
+
+        const light = new THREE.HemisphereLight( 0xffffff, 0x000000, 1.5 );
+        scene.add( light );
+
+        raycaster = new THREE.Raycaster();
+    
+         
+        //TORUS
+        const torusKnotGeometry = new THREE.TorusKnotBufferGeometry( 3, 1, 256, 32 );
+        const torusKnotMaterial = new THREE.MeshNormalMaterial();
+
+        torusKnot = new THREE.Mesh( torusKnotGeometry, torusKnotMaterial );
+        torusKnot.position.set( -15, 4, -50);
+        torusKnot.scale.set( 0.5, 0.5, 0.5 );
+        scene.add( torusKnot );
+
+
+        //SPHERES
+        const geometry = new THREE.SphereBufferGeometry( 0.07, 50, 60 );
+        const material = new THREE.MeshLambertMaterial( { color: 0x0000ff, envMap:reflectionCube, combine: THREE.MixOperation, reflectivity: 0.3 } );
+
+        for ( var i = 0; i < 500; i ++ ) {
+
+        const mesh = new THREE.Mesh( geometry, material );
+        mesh.position.x = Math.random() * 10 + 5;
+        mesh.position.y = Math.random() * 10 - 5;
+        mesh.position.z = Math.random() * 10 - 5;
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = Math.random() * 3 + 1;
+        mesh.rotation.y = Math.PI/4;
+        scene.add( mesh );
+        mesh.position.set(40,10, -30);
+
+        spheres.push( mesh );
+        }
+
+
+
+        const mesh2Geometry = new THREE.SphereBufferGeometry( 0.05, 20, 30 );
+        const mesh2Material = new THREE.MeshBasicMaterial( { color: 0xffffff} );
+
+        for ( var i = 2; i < 500; i ++ ) {
+
+        const mesh2 = new THREE.Mesh( mesh2Geometry, mesh2Material );
+        mesh2.position.x = Math.random() * 10 + 5;
+        mesh2.position.y = Math.random() * 10 - 5;
+        mesh2.position.z = Math.random() * 10 - 5;
+        mesh2.scale.x = mesh2.scale.y = mesh2.scale.z = Math.random() * 3 + 1;
+
+        scene.add( mesh2 );
+     
+
+        spheres2.push( mesh2 );
+        }
+
+
+        //WATER GROUND
+        const groundGeometry = new THREE.PlaneBufferGeometry( 2000, 2000 );
+        const groundMaterial = new THREE.MeshStandardMaterial( { roughness: 1, metalness: 0 } );
+        const ground = new THREE.Mesh( groundGeometry, groundMaterial );
+        ground.rotation.x = Math.PI * - 0.5;
+        scene.add( ground );
+        ground.position.y = -10;
+
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load( 'textures/perlin.png', function ( map ) {
+
+                    map.wrapS = THREE.RepeatWrapping;
+                    map.wrapT = THREE.RepeatWrapping;
+                    map.anisotropy = 16;
+                    map.repeat.set( 40, 40 );
+                    groundMaterial.map = map;
+                    groundMaterial.needsUpdate = true;
+
+             } );
+
+
+        // WATER
+        var waterGeometry = new THREE.PlaneBufferGeometry( 2000, 2000 );
+
+        water = new Water( waterGeometry, {
+                    color: 0x008BFF,
+                    scale: 10000,
+                    flowDirection: new THREE.Vector2( 1, 1 ),
+                    reflectivity: 0,
+                   
+                    flowSpeed: 0.002,
+                    textureWidth:1024,
+                    textureHeight: 1024,
+                    refractionRatio: 0,
+                  
+
+                } );
+
+        water.position.y = -5;
+        water.rotation.x = Math.PI * - 0.5;
+        scene.add( water );
+
+
+        //3D MODELS EXPORT
+  
+        var gltfLoader = new GLTFLoader();
+
+
+
+        gltfLoader.load('models/yellowave.glb', (gltf) => {
+        var wave2 = gltf.scene;
+        scene.add(wave2);
+        wave2.scale.set(0.5,0.5,0.5);
+        wave2.position.set(20,0,0);
+        wave2.rotation.y = Math.PI/2;
+ 
+        });
+      
+        gltfLoader.load('models/wavething.glb', (gltf) => {
+        var wave = gltf.scene;
+        scene.add(wave);
+        wave.scale.set (3.5,3.5,3.5);
+        wave.position.set(70,5,-140);
+ 
+        });
+
+        gltfLoader.load('models/bigmolecule.glb', (gltf) => {
+        var bmolecule = gltf.scene;
+        scene.add(bmolecule);
+        bmolecule.scale.set (1.5,1.5,1.5);
+        bmolecule.position.set(-30,-15,-20);
+        });
+
+        gltfLoader.load('models/blueatom.glb', (gltf) => {
+        var blueatom = gltf.scene;
+        scene.add(blueatom);
+        blueatom.scale.set (0.3,0.3,0.3);
+       blueatom.position.set(-60,15,60);
+      
+        });
+
+        gltfLoader.load('models/greenmolecule.glb', (gltf) => {
+        var gmolecule = gltf.scene;
+        scene.add(gmolecule);
+        gmolecule.scale.set (1.5,1.5,1.5);
+        gmolecule.position.set(-80,-9,-62);
+     
+        });
+ 
+        gltfLoader.load('models/bigwave.glb', (gltf) => {
+        var wavebig = gltf.scene;
+        scene.add(wavebig);
+        wavebig.scale.set (2,2,2);
+        wavebig.position.set(0,-5,-20); 
+        });
+
+        gltfLoader.load('models/donuts.glb', (gltf) => {
+        var donuts = gltf.scene;
+        scene.add(donuts);
+        donuts.scale.set (3,3,3);
+        donuts.position.set(60,-5,100); 
+      
+
+        });
+
+        gltfLoader.load('models/atom.glb', (gltf) => {
+        var atom = gltf.scene;
+        scene.add(atom);
+        atom.scale.set(0.7,0.7,0.7);
+        atom.position.set(30,3,-20);
+        atom.rotation.y = Math.PI;   
+        });
+        
+        gltfLoader.load('models/spheres.glb', (gltf) => {
+        var spheres = gltf.scene;
+        scene.add(spheres);
+        spheres.scale.set (1.5, 1.5, 1.5);
+        spheres.position.set(0,-5,-20);   
+          
+        });
+
+        gltfLoader.load('models/waveblue.glb', (gltf) => {
+        var waveblue = gltf.scene;
+        scene.add(waveblue);
+        waveblue.scale.set (1.5, 1.5, 1.5);
+        wavelue.position.set(0,-5,-20); 
+        });
+
+        gltfLoader.load('models/pinkmolecule.glb', (gltf) => {
+        var pinkmolecule = gltf.scene;
+        scene.add(pinkmolecule);
+        pinkmolecule.scale.set (1.5, 1.5, 1.5);
+        pinkmolecule.position.set(5,-5,-60); 
+        pinkmolecule.rotation.y = Math.PI;
+        });
+
+
+        gltfLoader.load('models/mola.glb', (gltf) => {
+        var mola = gltf.scene;
+        scene.add(mola);
+        mola.scale.set (2, 2, 2);
+        mola.position.set(10,-5,-120); 
+        mola.rotation.y = Math.PI;
+        });
+
+
+
+    
+        gltfLoader.load('models/raindrops.glb', (gltf) => {
+        var rain = gltf.scene;
+        scene.add(rain);
+        rain.scale.set (2, 2, 2);
+        rain.position.set(0,0,-20);
+        });
+        
+
+
+        //RENDER
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        container.appendChild( renderer.domElement );
+       
+        renderer.toneMapping = THREE.LinearToneMapping;
+        renderer.toneMappingExposure = 1;
+        //renderer.physicallyCorrectLights = true;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        
+ 
+        /*
+        var tween = new TWEEN.Tween( square.rotation ).to( { y: 1 * Math.PI }, 60000 );
+        tween.start();
+        */
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        }
+
+
+        function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        render();
+
+        }         
+
+
+        function animate() {
+
+        requestAnimationFrame( animate );
+
+
+
+         const time = performance.now();
+
+   
+
+                if ( controls.isLocked === true ) {
+
+
+                    const intersections = raycaster.intersectObjects( objects );
+
+                    const onObject = intersections.length > 0;
+
+                    const delta = ( time - prevTime ) / 500;
+
+                    velocity.x -= velocity.x * 4.0 * delta;
+                    velocity.z -= velocity.z * 4.0 * delta;
+
+                   
+
+                    direction.z = Number( moveForward ) - Number( moveBackward );
+                    direction.x = Number( moveRight ) - Number( moveLeft );
+                    direction.normalize(); // this ensures consistent movements in all directions
+
+                    if ( moveForward || moveBackward ) velocity.z -= direction.z * 60.0 * delta;
+                    if ( moveLeft || moveRight ) velocity.x -= direction.x * 60.0 * delta;
+
+                    if ( onObject === true ) {
+
+                        velocity.y = Math.max( 0, velocity.y );
+                        canJump = true;
+
+                    }
+
+                    controls.moveRight( - velocity.x * delta );
+                    controls.moveForward( - velocity.z * delta );
+
+                    controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+                    if ( controls.getObject().position.y < 0 ) {
+
+                        velocity.y = 0;
+                        controls.getObject().position.y = 0;
+
+                        canJump = true;
+
+                    }
+
+                }
+
+                prevTime = time;
+
+        render();
+
+       
+    
+        }
+
+
+       function render() {
+
+        var timer = 0.0001 * Date.now();
+    
+        const time2 = performance.now() * 0.0003;
+        let anim_time;
+
+
+        const k = 1.5;
+
+
+
+
+
+        for ( var i = 0, il = spheres.length; i < il; i ++ ) {
+
+        var sphere = spheres[ i ];
+
+         sphere.position.x = 5 * Math.cos( timer + i );
+         sphere.position.y = 5 * Math.sin( timer + i * 1.1 );
+
+         }
+
+
+        for ( var i = 0, il = spheres2.length; i < il; i ++ ) {
+
+        var sphere = spheres2[ i ];
+
+         sphere.position.x = 25 * Math.cos( timer + i );
+         sphere.position.y = 30 * Math.sin( timer + i * 0.1 );
+
+         }
+
+
+         
+
+         var delta = clock.getDelta();
+
+         torusKnot.rotation.x += delta;
+         torusKnot.rotation.y += delta * 0.5;
+
+
+                if ( video.readyState === video.HAVE_ENOUGH_DATA ) 
+            {
+                videoImageContext.drawImage( video, 0, 0 );
+                if ( videoTexture ) 
+                    videoTexture.needsUpdate = true;
+            }
+
+
+   
+
+
+    
+
+
+      
+        renderer.render( scene, camera );
+           
+    
+
+  
+
+        }
+
+    </script>
+
+  </body>
+</html>
