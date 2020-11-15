@@ -40,7 +40,7 @@
 </head>
 <body>
 
-            <div id="blocker">
+        <div id="blocker">
 
             <div id="welcome">
                     Welcome
@@ -137,10 +137,6 @@
         controls.addEventListener( 'change', render );
         controls.enableDamping = true; 
         controls.dampingFactor = 0.05;
-
-
-
-
 
         const blocker = document.getElementById( 'blocker' );
                 
@@ -259,7 +255,6 @@
         var movieGeometry = new THREE.PlaneGeometry( 24, 10, 4, 4 );
         var movieScreen = new THREE.Mesh( movieGeometry, movieMaterial );
         movieScreen.position.set(0,0,-80);
-    
         scene.add(movieScreen);
 
 
@@ -309,8 +304,6 @@
         spheres.push( mesh );
         }
 
-
-
         const mesh2Geometry = new THREE.SphereBufferGeometry( 0.05, 20, 30 );
         const mesh2Material = new THREE.MeshBasicMaterial( { color: 0xffffff} );
 
@@ -323,8 +316,6 @@
         mesh2.scale.x = mesh2.scale.y = mesh2.scale.z = Math.random() * 3 + 1;
 
         scene.add( mesh2 );
-     
-
         spheres2.push( mesh2 );
         }
 
@@ -375,9 +366,6 @@
         //3D MODELS EXPORT
   
         var gltfLoader = new GLTFLoader();
-
-
-
         gltfLoader.load('models/yellowave.glb', (gltf) => {
         var wave2 = gltf.scene;
         scene.add(wave2);
@@ -406,7 +394,7 @@
         var blueatom = gltf.scene;
         scene.add(blueatom);
         blueatom.scale.set (0.3,0.3,0.3);
-       blueatom.position.set(-60,15,60);
+        blueatom.position.set(-60,15,60);
       
         });
 
@@ -429,9 +417,7 @@
         var donuts = gltf.scene;
         scene.add(donuts);
         donuts.scale.set (3,3,3);
-        donuts.position.set(60,-5,100); 
-      
-
+        donuts.position.set(60,-5,100);
         });
 
         gltfLoader.load('models/atom.glb', (gltf) => {
@@ -447,7 +433,6 @@
         scene.add(spheres);
         spheres.scale.set (1.5, 1.5, 1.5);
         spheres.position.set(0,-5,-20);   
-          
         });
 
         gltfLoader.load('models/waveblue.glb', (gltf) => {
@@ -474,9 +459,6 @@
         mola.rotation.y = Math.PI;
         });
 
-
-
-    
         gltfLoader.load('models/raindrops.glb', (gltf) => {
         var rain = gltf.scene;
         scene.add(rain);
@@ -490,19 +472,13 @@
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
-
         container.appendChild( renderer.domElement );
        
         renderer.toneMapping = THREE.LinearToneMapping;
         renderer.toneMappingExposure = 1;
         //renderer.physicallyCorrectLights = true;
         renderer.outputEncoding = THREE.sRGBEncoding;
-        
- 
-        /*
-        var tween = new TWEEN.Tween( square.rotation ).to( { y: 1 * Math.PI }, 60000 );
-        tween.start();
-        */
+
 
         window.addEventListener( 'resize', onWindowResize, false );
 
@@ -529,7 +505,6 @@
 
          const time = performance.now();
 
-   
 
                 if ( controls.isLocked === true ) {
 
@@ -595,9 +570,6 @@
         const k = 1.5;
 
 
-
-
-
         for ( var i = 0, il = spheres.length; i < il; i ++ ) {
 
         var sphere = spheres[ i ];
@@ -618,8 +590,6 @@
          }
 
 
-         
-
          var delta = clock.getDelta();
 
          torusKnot.rotation.x += delta;
@@ -633,19 +603,10 @@
                     videoTexture.needsUpdate = true;
             }
 
-
-   
-
-
-    
-
-
-      
+  
         renderer.render( scene, camera );
            
-    
 
-  
 
         }
 
